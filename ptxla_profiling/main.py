@@ -176,7 +176,7 @@ def main(config):
 
                 if global_step == 0:
                     xm.add_step_closure(lambda: xm.master_print("Initial compilation completed."), args=())
-                if (global_step + 1) % config.log_every_steps == 0:
+                if config.log_every_steps > 0 and (global_step + 1) % config.log_every_steps == 0:
                     new_last_t = time.time()
                     steps_per_second = config.log_every_steps / (new_last_t - train_metrics_last_t)
                     lr = optimizer.param_groups[0]["lr"]
@@ -185,7 +185,7 @@ def main(config):
                     )
                     train_metrics_last_t = new_last_t
 
-        if (epoch + 1) % config.eval_interval == 0 or epoch + 1 == config.num_epochs:
+        if config.eval_interval > 0 and ((epoch + 1) % config.eval_interval == 0 or epoch + 1 == config.num_epochs):
             utils.sync_batch_stats(model)
             accuracy_val, loss_val = eval_on_val(data_loader_val, model, device, config)
             xm.master_print(f"eval epoch: {epoch}, loss: {loss_val:.4f}, accuracy: {100*accuracy_val:.2f}")
@@ -193,7 +193,9 @@ def main(config):
                 f"{datetime.datetime.now().time()} [{global_step+1}] "
                 f"eval_accuracy={accuracy_val:.8f}, eval_loss={loss_val:.8f}"
             )
-        if (epoch + 1) % config.checkpoint_interval == 0 or epoch + 1 == config.num_epochs:
+        if config.checkpoint_interval > 0 and (
+            (epoch + 1) % config.checkpoint_interval == 0 or epoch + 1 == config.num_epochs
+        ):
             utils.sync_batch_stats(model)
             ckpt = {
                 "model": model.state_dict(),

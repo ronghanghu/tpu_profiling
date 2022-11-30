@@ -288,7 +288,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str) -> Train
         if step == step_offset:
             logging.info("Initial compilation completed.")
 
-        if config.get("log_every_steps"):
+        if config.log_every_steps > 0:
             train_metrics.append(metrics)
             if (step + 1) % config.log_every_steps == 0:
                 train_metrics = common_utils.get_metrics(train_metrics)
@@ -300,7 +300,9 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str) -> Train
                 train_metrics = []
                 train_metrics_last_t = time.time()
 
-        if (step + 1) % (steps_per_epoch * config.eval_interval) == 0 or step + 1 == num_steps:
+        if config.eval_interval > 0 and (
+            (step + 1) % (steps_per_epoch * config.eval_interval) == 0 or step + 1 == num_steps
+        ):
             epoch = step // steps_per_epoch
             eval_metrics = []
 
@@ -317,7 +319,9 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str) -> Train
             )
             writer.write_scalars(step + 1, {f"eval_{key}": val for key, val in summary.items()})
             writer.flush()
-        if (step + 1) % (steps_per_epoch * config.checkpoint_interval) == 0 or step + 1 == num_steps:
+        if config.checkpoint_interval > 0 and (
+            (step + 1) % (steps_per_epoch * config.checkpoint_interval) == 0 or step + 1 == num_steps
+        ):
             state = sync_batch_stats(state)
             save_checkpoint(state, workdir)
 
